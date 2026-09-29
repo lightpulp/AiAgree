@@ -9,12 +9,16 @@ if ($act === 'summary') {
     add_event((int)$id, 'warn', 'Node offline');
     $db->exec("UPDATE nodes SET offline_notified=1 WHERE id=" . (int)$id);
   }
+  
   $nodes = $db->query("SELECT n.id, n.last_seen, r.soil_moisture, r.soil_temp, r.air_temp, r.humidity, r.ph, r.mq2, r.light
     FROM nodes n LEFT JOIN readings r ON r.id=(SELECT MAX(id) FROM readings WHERE node_id=n.id) ORDER BY n.id")->fetchAll(PDO::FETCH_ASSOC);
+  
   foreach ($nodes as &$n) { $n['ago'] = $now - $n['last_seen']; $n['online'] = $n['ago'] < $off; }
+  
   $events = $db->query("SELECT ts,node_id,type,message FROM events ORDER BY id DESC LIMIT 10")->fetchAll(PDO::FETCH_ASSOC);
   echo json_encode(['nodes' => $nodes, 'events' => $events]); exit;
 }
+
 if ($act === 'analytics') {
   $period = $_GET['period'] ?? 'day';
   [$since, $fmt, $grp] = [
@@ -29,6 +33,7 @@ if ($act === 'analytics') {
         GROUP BY strftime('$grp', ts,'unixepoch','localtime') ORDER BY MIN(ts)";
   echo json_encode($db->query($q)->fetchAll(PDO::FETCH_ASSOC)); exit;
 }
+
 if ($act === 'system') {
   $c = cfg();
   echo json_encode(['php' => PHP_VERSION,

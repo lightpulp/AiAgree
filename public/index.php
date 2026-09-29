@@ -3,6 +3,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Basecamp</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 <style>
   .sidebar{width:200px;min-height:100vh}
@@ -25,6 +26,10 @@
   <main class="flex-grow-1 p-4">
 
     <section id="dashboard" class="show">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">Dashboard</h5>
+        <button id="ai-btn" class="btn btn-success">Run AI Analysis</button>
+      </div>
       <div class="row g-3 mb-4 text-center">
         <div class="col"><div class="card"><div class="card-body"><div class="text-muted small">Total Nodes</div><div class="fs-2" id="s-total">0</div></div></div></div>
         <div class="col"><div class="card"><div class="card-body"><div class="text-success small">Online</div><div class="fs-2" id="s-on">0</div></div></div></div>
@@ -67,6 +72,10 @@
 
   </main>
 </div>
+<div class="modal fade" id="ai-modal" tabindex="-1"><div class="modal-dialog modal-lg modal-dialog-scrollable"><div class="modal-content">
+  <div class="modal-header"><h5 class="modal-title">AI Analysis</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body"><pre id="ai-out" class="small mb-0"></pre></div>
+</div></div></div>
 <script>
 const $ = s => document.querySelector(s);
 const ago = s => s < 60 ? s + ' sec ago' : s < 3600 ? Math.floor(s/60) + ' min ago' : Math.floor(s/3600) + ' h ago';
@@ -127,6 +136,16 @@ function route() {
 $('#a-period').onclick = e => { if (!e.target.dataset.p) return; period = e.target.dataset.p;
   document.querySelectorAll('#a-period .btn').forEach(b => b.classList.toggle('active', b === e.target)); loadChart(); };
 $('#a-node').onchange = $('#a-metric').onchange = loadChart;
+$('#ai-btn').onclick = async () => {
+  const b = $('#ai-btn'); b.disabled = true; b.textContent = 'Analyzing...';
+  let out;
+  try { const r = await fetch('ai.php', { method: 'POST' }); out = await r.text();
+        try { out = JSON.stringify(JSON.parse(out), null, 2); } catch (e) {} }
+  catch (e) { out = JSON.stringify({ error: String(e) }, null, 2); }
+  $('#ai-out').textContent = out;
+  bootstrap.Modal.getOrCreateInstance('#ai-modal').show();
+  b.disabled = false; b.textContent = 'Run AI Analysis';
+};
 addEventListener('hashchange', route);
 route(); refresh(); setInterval(refresh, 5000);
 </script>
